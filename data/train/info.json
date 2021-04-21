@@ -1,0 +1,49 @@
+{
+    "main_col": "t_01",
+    "max_time": 100,
+    "tables": {
+        "main": {
+            "t_01": "time",
+            "c_01": "cat",
+            "c_02": "cat",
+            "n_1": "num",
+            "n_2": "num",
+            "c_3": "cat"
+        },
+        "table_1": {
+            "c_01": "cat",
+            "c_1": "cat",
+            "c_2": "cat",
+            "n_1": "num"
+        },
+        "table_2": {
+            "c_02": "cat",
+            "c_1": "cat"
+        },
+        "table_3": {
+            "n_1": "num",
+            "c_02": "cat",
+            "t_01": "time"
+        }
+    },
+    "relations": [
+        {
+            "table_A": "main",
+            "table_B": "table_1",
+            "key": ["c_01"],
+            "type": "many_to_one"
+        },
+        {
+            "table_A": "main",
+            "table_B": "table_2",
+            "key": ["c_02"],
+            "type": "many_to_one"
+        },
+        {
+            "table_A": "main",
+            "table_B": "table_3",
+            "key": ["c_02"],
+            "type": "many_to_one"
+        }
+    ]
+}
