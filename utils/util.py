@@ -1,9 +1,11 @@
 
 import time
+import functools
+import numpy as np
 from typing import Any
 
+from . import CONSTANT
 
-import functools
 nesting_level = 0
 is_start = None
 
@@ -81,5 +83,42 @@ def log(entry: Any):
 
       
 
+class FeatContext:
+    @staticmethod
+    def gen_feat_name(namespace,cls_name,feat_name,feat_type):
+        prefix = CONSTANT.type2prefix[feat_type]
 
 
+        return f"{prefix}{cls_name}:{feat_name}:{namespace}"
+
+    @staticmethod
+    def gen_merge_name(table_name,feat_name,feat_type):
+        prefix = CONSTANT.type2prefix[feat_type]
+        return f"{prefix}{table_name}.({feat_name})"
+
+    @staticmethod
+    def gen_merge_feat_name(namespace,cls_name,feat_name,feat_type,table_name):
+        feat_name = FeatContext.gen_feat_name(namespace,cls_name,feat_name,feat_type)
+        return FeatContext.gen_merge_name(table_name,feat_name,feat_type)
+
+
+def train_test_split(X,y,test_rate=0.2,shuffle=True,random_state=1):
+    length = X.shape[0]
+
+
+    test_size = int(length * test_rate)
+    train_size = length - test_size
+
+    X_train = X.iloc[:train_size]
+    y_train = y.iloc[:train_size]
+    X_test = X.iloc[train_size:]
+    y_test = y.iloc[train_size:]
+
+    if shuffle:
+        np.random.seed(random_state)
+        idx = np.arange(train_size)
+        np.random.shuffle(idx)
+        X_train = X_train.iloc[idx]
+        y_train = y_train.iloc[idx]
+
+    return X_train,y_train,X_test,y_test

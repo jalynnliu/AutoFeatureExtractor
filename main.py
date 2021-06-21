@@ -68,3 +68,11 @@ def read_test(datapath, info):
 def train_and_predict(train_data,train_label,info,test_data):
     extractor = AFE(info)
     return extractor.fit(train_data, train_label)
+
+
+info = read_info("data")
+train_data,train_label = read_train("data",info)
+test_data = read_test("data",info)
+
+train_and_predict(train_data,train_label,info,test_data)
+

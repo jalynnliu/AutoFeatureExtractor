@@ -5,9 +5,10 @@ import pandas as pd
 import copy
 from datetime import datetime
 import gc
-import time
 
-from util import log, timeclass
+from utils import CONSTANT
+from utils.util import timeclass, train_test_split
+from feat.feat_pipe import FeatPipeline,FeatEngine
 
 class AFE:
     auc = []
@@ -37,18 +38,18 @@ class AFE:
     def process(self, Xs, y, X_test):
         np.random.seed(CONSTANT.SEED)
 
-        Xs[Config.MAIN_TABLE_NAME] = pd.concat(
-            [Xs[Config.MAIN_TABLE_NAME], ])
+        Xs[CONSTANT.MAIN_TABLE_NAME] = pd.concat(
+            [Xs[CONSTANT.MAIN_TABLE_NAME], ])
 
         gc.collect()
 
-        graph = Graph(self.info, Xs)
-        # TODO merge tables, DFS
-
         feat_pipeline = FeatPipeline()
         feat_engine = FeatEngine(feat_pipeline, config)
-        feat_engine.fit_transform_order1(main_table, y)
-        # TODO Feature genetator
+        feat_engine.fit_transform_order1(Xs, y)
+        feat_engine.fit_transform_keys_order2(Xs,y)
+        del feat_engine
+        gc.collect()
+
 
         def split_table(table, y):
             X = table.data
@@ -60,8 +61,33 @@ class AFE:
             table2.data = X_test
             return table1, y_train, table2, y_test
 
-        table1, y_train, table2, y_test = split_table(main_table, y)
-        # TODO feature evaluation
+        table1, y_train, table2, y_test = split_table(Xs, y)
+        feat_engine = FeatEngine(feat_pipeline,config)
+        feat_output = FeatOutput()
+
+        feat_engine.fit_transform_merge_order1(table1,y_train)
+        X_train,y_train,categories = feat_output.fit_transform_output(table1,y_train)
+        gc.collect()
+        feat_engine.transform_merge_order1(table2)
+        X_test = feat_output.transform_output(table2)
+
+        lgb = AutoLGB()
+        lgb.param_compute(X_train,y_train,categories,config)
+        lgb.param_opt_new(X_train,y_train,X_test,y_test,categories)
+        len_test = X_test.shape[0]
+        lgb.ensemble_train(X_train,y_train,categories,config,len_test)
+        gc.collect()
+
+        pred,pred0 = lgb.ensemble_predict_test(X_test)
+
+        auc = roc_auc_score(y_test,pred0)
+        print('source AUC:',auc)
+            
+        auc = roc_auc_score(y_test,pred)
+        Model.ensemble_auc.append(auc)
+        print('ensemble AUC:',auc)
+            
+        importances = lgb.get_ensemble_importances()
 
         paths = os.path.join(feature_importance_path, version)
         if not os.path.exists(paths):
